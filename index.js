@@ -1,19 +1,39 @@
 'use strict'
+
 const debug = require('debug')('fn-router')
 const pathToRegexp = require('path-to-regexp')
+const _trim = require('lodash.trim')
+
+//
+// Takes a match (from re.exec(...)), and keys
+// (from pathToRegexp(..., keys)) and creates a
+// params hash.
+//
+function getParams(match, keys) {
+	const paramsArray = match.slice(1).map((param, index) => ({ [keys[index].name]: param }))
+	return Object.assign.apply(null, [ { } ].concat(paramsArray))
+}
+
+function lead(s) {
+	if (s.charAt(0) != '/')
+		return '/' + s
+	return s
+}
+
+function trim(s) {
+	return _trim(s, '/')
+}
 
 module.exports = function router() {
 	const routes = [ ]
 
-	function matcher(path, contextRoute) {
-		contextRoute = contextRoute || ''
-		path = path.replace(new RegExp(`^${contextRoute}`), '')
-		debug('trying to match', path)
+	function matcher(path, passThruParams) {
+		debug(`ROOT ${path}`)
 		for (const route of routes) {
 			try {
-				return route(path)
+				return route(path, passThruParams)
 			} catch (e) {
-				if (/RouteMismatchError/.test(e.message))
+				if (/^RouteMismatchError/.test(e.message))
 					continue
 				else
 					throw e
@@ -33,15 +53,12 @@ module.exports = function router() {
 		// add a function to `routes` that, when
 		// invoked on a valid path, calls `fn`
 		//
-		routes.push(function singleMatcher(pathToTry) {
-			debug('?', pathToTry, path)
+		routes.push(function singleMatcher(pathToTry, passThruParams) {
+			debug(`ROUTE ${path} ? ${pathToTry}`)
 			const match = re.exec(pathToTry)
 			if (match === null)
 				throw new Error('RouteMismatchError: ' + pathToTry + ' does not match ' + path)
-
-			const paramsArray = match.slice(1).map((param, index) => ({ [keys[index].name]: param }))
-			const params = Object.assign.apply(null, [ { } ].concat(paramsArray))
-			return fn(params)
+			return fn(Object.assign({ }, passThruParams, getParams(match, keys)))
 		})
 		return matcher
 	}
@@ -54,14 +71,25 @@ module.exports = function router() {
 			router = path
 			path = '/'
 		}
+		path = path + '/:fnrouterSubroute*'
+		const keys = [ ]
+		const re = pathToRegexp(path, keys)
 
 		//
 		// add a function to `routes` that, delegates
 		// to a subrouter
 		//
-		routes.push(function subrouteMatcher(pathToTry) {
-			debug(`SUB ${pathToTry}, contextRoute=${path}`)
-			return router(pathToTry, path)
+		routes.push(function subrouteMatcher(pathToTry, passThruParams) {
+			debug(`SUB ${path} ? ${pathToTry}`)
+			const match = re.exec(pathToTry)
+			if (match === null)
+				throw new Error('RouteMismatchError: ' + pathToTry + ' does not match any routes')
+
+			const params = getParams(match, keys)
+			let subRoute = params.fnrouterSubroute || '/'
+			subRoute = lead(trim(subRoute))
+			delete params.fnrouterSubroute
+			return router(subRoute, Object.assign({ }, passThruParams, params))
 		})
 		return matcher
 	}
