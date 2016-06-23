@@ -5,7 +5,7 @@ const router = require('./index')
 
 const r = router()
 
-.use('/api/v:version?', router()
+.add('/api/v:version?', router()
 	.add('/', function () {
 		return 'API'
 	})
@@ -21,6 +21,10 @@ const r = router()
 	return 123
 })
 
+.add('/exception', function () {
+	throw new Error('CustomError')
+})
+
 describe('fn-router', function () {
 	it('should route simple paths', function () {
 		assert.equal(r('/'), 'INDEX')
@@ -31,5 +35,10 @@ describe('fn-router', function () {
 		assert.equal(r('/api/v1'), 'API')
 		assert.equal(r('/api/v1/version'), '1')
 		assert.equal(r('/api/v2/version'), '2')
+	})
+
+	it('should throw exceptions', function () {
+		assert.throws(() => r('/exception'), /CustomError/)
+		assert.throws(() => r('/non-existent'), /RouteMismatchError/)
 	})
 })
