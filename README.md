@@ -32,6 +32,8 @@ r('/api/v3/version')
 // => '3'
 ```
 
+For more usage examples, see `test.js`.
+
 ## License
 
 Copyright (c) 2016, Jonathan Apodaca <jrapodaca@gmail.com>

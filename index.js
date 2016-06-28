@@ -27,11 +27,16 @@ function trim(s) {
 module.exports = function router() {
 	const routes = [ ]
 
+	// function bind(fn) {
+	// 	if (typeof fn !== 'function') return fn
+	// 	return fn.bind(this)
+	// }
+
 	function matcher(path, passThruParams) {
 		debug(`ROOT ${path}`)
 		for (const route of routes) {
 			try {
-				return route(path, passThruParams)
+				return route.call(this, path, passThruParams)
 			} catch (e) {
 				if (/^RouteMismatchError/.test(e.message))
 					continue
@@ -64,7 +69,7 @@ module.exports = function router() {
 				subRoute = lead(trim(subRoute))
 				delete params.fnrouterSubroute
 
-				return fn(subRoute, Object.assign({ }, passThruParams, params))
+				return fn.call(this, subRoute, Object.assign({ }, passThruParams, params))
 			})
 		} else {
 			//
@@ -76,12 +81,24 @@ module.exports = function router() {
 				const match = re.exec(pathToTry)
 				if (match === null)
 					throw new Error('RouteMismatchError: ' + pathToTry + ' does not match ' + path)
-				return fn(Object.assign({ }, passThruParams, getParams(match, keys)))
+				return fn.call(this, Object.assign({ }, passThruParams, getParams(match, keys)))
 			})
 		}
 		return matcher
 	}
 	matcher.__is_matcher__ = true
+
+	//
+	// override default Function.prototype.bind:
+	// make sure we still retain __is_matcher__ = true
+	// on bound function
+	//
+	matcher._bind = matcher.bind
+	matcher.bind = function (thisArg) {
+		const fn = matcher._bind(thisArg)
+		fn.__is_matcher__ = true
+		return fn
+	}
 
 	// return the router:
 	return matcher
