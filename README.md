@@ -1,5 +1,7 @@
 # fn-router
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/jrop/fn-router.svg)](https://greenkeeper.io/)
+
 > Route URLs to functions
 
 [![Build Status](https://travis-ci.org/jrop/fn-router.svg?branch=master)](https://travis-ci.org/jrop/fn-router)
