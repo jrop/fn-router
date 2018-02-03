@@ -16,7 +16,7 @@
     "path-to-regexp": "^2.0.0"
   },
   "devDependencies": {
-    "eslint": "^4.5.0",
+    "eslint": "^4.17.0",
     "istanbul": "^0.4.4",
     "mocha": "^3.5.0"
   }
